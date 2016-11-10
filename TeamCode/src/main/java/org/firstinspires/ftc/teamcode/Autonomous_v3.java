@@ -75,10 +75,10 @@ public class Autonomous_v3 extends LinearOpMode {
     }
 
     // Names constants
-    final double BASE_SPEED = 0.5;     // Speed used in the majority of autonomous
-    final double CORRECTION = 1;    //Gyro correction, currently not in use
-    double TARGET_DISTANCE = 25.0;      //Distance that we want to be from the wall
-    double RADIUS = 200.0;       //Turning radius for wall-following corrections
+    final double BASE_SPEED = 0.2;     // Speed used in the majority of autonomous
+    final double CORRECTION_SENSITIVITY = 20.0;
+    double TARGET_DISTANCE = 5.0;      //Distance that we want to be from the wall
+    double RADIUS = 150.0;       //Turning radius for wall-following corrections
 
     private State currentState;     //State in state machine that is currently running
 //    private double heading;
@@ -141,8 +141,7 @@ public class Autonomous_v3 extends LinearOpMode {
 
             switch (currentState){
                 case STATE_GYRO_DRIVE:
-                    if (robot.wallUltrasonic.getVoltage()/5 <= 0.4){    //Correct distance to begin curve
-//                    if (robot.wallUltrasonic.getVoltage()/5 <= (TARGET_DISTANCE / 100) + ((RADIUS*(1-(1/Math.sqrt(2))))/100)){    //Correct distance to begin curve
+                    if (robot.wallUltrasonic.getVoltage()/5 <= 0.7){    //Correct distance to begin curve
                         newState(State.STATE_WALL_FOLLOW);     //Start next state
                     } else {
                         //setDrivePower(BASE_SPEED, BASE_SPEED);
@@ -186,12 +185,13 @@ public class Autonomous_v3 extends LinearOpMode {
                         double distance = robot.wallUltrasonic.getVoltage()/5.0;    //Distance in meters
                         double distanceError = distance - TARGET_DISTANCE/100.0;    //Error between where we are and where we need to be
                         telemetry.addData("Distance", "Distance Error" + distanceError);    //Display telemetry for the distanceError
+
                         if (distanceError >= 0) {   //If we are too far from the wall
                             currentAngle = Math.toDegrees(Math.acos(((RADIUS/100.0) - distanceError) / (RADIUS/100.0)));     //Calculate the angle that the robot needs to be pointed at
                             setTargetAngle(-currentAngle);      //Sets that values as our Target Angle
                         } else {    //otherwise we must be too close to wall
                             currentAngle = Math.toDegrees(Math.acos(((RADIUS/100.0) + distanceError) / (RADIUS/100.0)));     //Calculate the angle that the robot needs to be pointed at
-                            setTargetAngle(+currentAngle);      //Sets that value as our target Angle
+                            setTargetAngle(+currentAngle/2.0);      //Sets that value as our target Angle
                         }
                         followWall();
 
@@ -270,7 +270,8 @@ public class Autonomous_v3 extends LinearOpMode {
            finalGyroDifference = Math.min(45.0, gyroDifference);
         }
 
-        setDrivePower(BASE_SPEED *(1 + finalGyroDifference/45.0), BASE_SPEED * (1 - finalGyroDifference/45.0));      //Sets power to change the angle accordingly
+        setDrivePower(BASE_SPEED *(1 + finalGyroDifference/CORRECTION_SENSITIVITY), BASE_SPEED * (1 - finalGyroDifference/CORRECTION_SENSITIVITY));      //Sets power to change the angle accordingly
+
         telemetry.addData("Left Motor", "Setting to" + Double.toString(BASE_SPEED *(1 + finalGyroDifference/45.0)));
         telemetry.addData("Right Motor", "Setting to" + Double.toString(BASE_SPEED * (1 - finalGyroDifference/45.0)));
         telemetry.addData("Angle", "Going to" + finalGyroDifference);
