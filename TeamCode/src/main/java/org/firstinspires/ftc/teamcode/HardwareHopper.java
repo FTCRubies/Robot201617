@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.kauailabs.navx.ftc.AHRS;
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cColorSensor;
-import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -41,14 +40,13 @@ public class HardwareHopper
     public CRServo pusherLeft = null;
     public CRServo pusherRight = null;
 
-    public ModernRoboticsI2cGyro    gyro =  null;
     public AnalogInput wallUltrasonic = null;
     public OpticalDistanceSensor lineSensor = null;
     public AHRS navx_device;
-    public ModernRoboticsI2cColorSensor colorLeft= null;
-    public ModernRoboticsI2cColorSensor colorRight= null;
+//    public ModernRoboticsI2cColorSensor colorLeft= null;
+//    public ModernRoboticsI2cColorSensor colorRight= null;
 
-    private final int NAVX_DIM_I2C_PORT = 3;
+    public final int NAVX_DIM_I2C_PORT = 5;
 
 
     public void setLeftPower(double leftPower){
@@ -89,14 +87,13 @@ public class HardwareHopper
         rightFrontMotor = ahwMap.dcMotor.get("right_front");
         rightBackMotor = ahwMap.dcMotor.get("right_back");
 
-        gyro = (ModernRoboticsI2cGyro) ahwMap.gyroSensor.get("MR_gyro");
         wallUltrasonic = ahwMap.analogInput.get("wall_ultrasonic");
         navx_device = AHRS.getInstance(ahwMap.deviceInterfaceModule.get("dim"),
                 NAVX_DIM_I2C_PORT,
                 AHRS.DeviceDataType.kProcessedData);
         lineSensor = ahwMap.opticalDistanceSensor.get("line_ODS");
-        colorLeft = (ModernRoboticsI2cColorSensor) ahwMap.colorSensor.get("left_color");
-        colorRight = (ModernRoboticsI2cColorSensor) ahwMap.colorSensor.get("right_color");
+//        colorLeft = (ModernRoboticsI2cColorSensor) ahwMap.colorSensor.get("left_color");
+//        colorRight = (ModernRoboticsI2cColorSensor) ahwMap.colorSensor.get("right_color");
 
 
         ultrasonicServo = ahwMap.servo.get("ultrasonic_servo");
@@ -104,16 +101,16 @@ public class HardwareHopper
         pusherRight = ahwMap.crservo.get("pusher_right");
 
 
+//        leftFrontMotor.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
+//        leftBackMotor.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
+//        rightFrontMotor.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
+//        rightBackMotor.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
 
-//
-//        buttonPusherServo1 = hwMap.servo.get("pusher_servo1");
-//        buttonPusherServo2 = hwMap.servo.get("pusher_servo2");
+        leftFrontMotor.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
+        leftBackMotor.setDirection(DcMotor.Direction.REVERSE); // Set to REVERSE if using AndyMark motors
+        rightFrontMotor.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
+        rightBackMotor.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
 
-
-        leftFrontMotor.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
-        leftBackMotor.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
-        rightFrontMotor.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
-        rightBackMotor.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
 
 
         setLeftPower(0);
@@ -121,8 +118,8 @@ public class HardwareHopper
         ultrasonicServo.setPosition(0.5);
         pusherRight.setPower(0);
         pusherLeft.setPower(0);
-        colorLeft.enableLed(false);
-        colorRight.enableLed(false);
+//        colorLeft.enableLed(false);
+//        colorRight.enableLed(false);
         lineSensor.enableLed(true);
 
         // Set all motors to run without encoders.

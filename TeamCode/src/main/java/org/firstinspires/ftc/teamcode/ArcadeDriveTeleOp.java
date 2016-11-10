@@ -67,12 +67,8 @@ public class ArcadeDriveTeleOp extends OpMode{
 
     double    INCREASE_VALUE  = 2.0 ;                  // Increase from base speed when "turbo" button pushed
     double    DECREASE_VALUE = 0.5;                 // Decrease from base speed when "slow" button pushed
-    int     SERVO_OUT = 0 ;
-    int     SERVO_IN = 255 ;
 
     private boolean calibration_complete = false;
-
-
 
 
     /*
@@ -130,6 +126,10 @@ public class ArcadeDriveTeleOp extends OpMode{
         } else {
             changeValue = 1;
             telemetry.addData ("Buttons Pressed", "None");
+        }
+
+        while (gamepad1.x){
+
         }
 
 

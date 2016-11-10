@@ -88,13 +88,13 @@ public class Autonomous_v2 extends LinearOpMode {
         // start calibrating the gyro.
         telemetry.addData(">", "Gyro Calibrating. Do Not move!"); //Calibrate the gyro and display telemetry
         telemetry.update();
-          robot.gyro.calibrate();
+          //robot.gyro.calibrate();
 
         // make sure the gyro is calibrated.
-        while (robot.gyro.isCalibrating() || robot.navx_device.isCalibrating())  {
-            Thread.sleep(50);
-            idle();
-        }
+//        while (robot.gyro.isCalibrating() || robot.navx_device.isCalibrating())  {
+//            Thread.sleep(50);
+//            idle();
+//        }
 
         robot.navx_device.zeroYaw();
 
@@ -133,7 +133,7 @@ public class Autonomous_v2 extends LinearOpMode {
             telemetry.addData("ODS", "Line Sensor: " + robot.lineSensor.getLightDetected());
             telemetry.addData ("Ultrasonic", "Reading: " + robot.wallUltrasonic.getVoltage()/5.0);
             telemetry.addData("Ultrasonic", "Distance Difference: " + Double.toString(distance/100 - (robot.wallUltrasonic.getVoltage()/5)));
-            telemetry.addData("MR Gyro", "Current Heading: " + robot.gyro.getIntegratedZValue());
+            //telemetry.addData("MR Gyro", "Current Heading: " + robot.gyro.getIntegratedZValue());
             telemetry.addData("MR Gyro", "Heading goal: " + heading);
             telemetry.addData("NavXGyro", "Current Heading" + robot.navx_device.getFusedHeading());
             telemetry.addData("Power", "Left Power: " + robot.leftFrontMotor.getPower());
@@ -172,7 +172,7 @@ public class Autonomous_v2 extends LinearOpMode {
                         //newState(State.STATE_WALL_FOLLOW);
                 } else {
                         setDrivePower(BASE_SPEED,0);
-                        telemetry.addData("Gyro", "Current Heading: ", + robot.gyro.getIntegratedZValue());
+                        //telemetry.addData("Gyro", "Current Heading: ", + robot.gyro.getIntegratedZValue());
                         telemetry.addData("Gyro", "Heading goal: ", + heading);
                         telemetry.addData("Power", "Left Power: ", robot.leftFrontMotor.getPower());
                         telemetry.addData("Power", "Right Power: ", robot.rightFrontMotor.getPower());

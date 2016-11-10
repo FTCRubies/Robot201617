@@ -61,9 +61,11 @@ public class Autonomous_v3 extends LinearOpMode {
     HardwareHopper robot = new HardwareHopper();
 
     private enum State { //List all of the states that will be used in this program (as seen in our state diagram)
+        STATE_TEST,
         STATE_GYRO_DRIVE,
         STATE_TURN,
         STATE_WALL_FOLLOW,
+        STATE_WALL_FOLLOW_ONE,
         STATE_BACKUP,
         STATE_READ_BEACON,
         STATE_FAR_BUTTON,
@@ -73,10 +75,10 @@ public class Autonomous_v3 extends LinearOpMode {
     }
 
     // Names constants
-    final double BASE_SPEED = 0.25;     // Speed used in the majority of autonomous
+    final double BASE_SPEED = 0.5;     // Speed used in the majority of autonomous
     final double CORRECTION = 1;    //Gyro correction, currently not in use
     double TARGET_DISTANCE = 25.0;      //Distance that we want to be from the wall
-    double RADIUS = 50.0;       //Turning radius for wall-following corrections
+    double RADIUS = 200.0;       //Turning radius for wall-following corrections
 
     private State currentState;     //State in state machine that is currently running
 //    private double heading;
@@ -92,26 +94,21 @@ public class Autonomous_v3 extends LinearOpMode {
 
         telemetry.addData(">", "Gyro Calibrating. Do Not move!"); //Calibrate the gyro and display telemetry
         telemetry.update();
-        robot.gyro.calibrate();     //calibrate the MR gyro
 
         // make sure the gyro is calibrated.
-        while (robot.gyro.isCalibrating() || robot.navx_device.isCalibrating())  {      //while either gyro sensor is calibrating, wait
-            Thread.sleep(50);
+        while (robot.navx_device.isCalibrating())  {      //while either gyro sensor is calibrating, wait
+           // Thread.sleep(50);
             idle();
         }
 
         robot.navx_device.zeroYaw();        //zero the Yaw on the navX gyro
         boolean firstBeaconPushed = false;
 
-        telemetry.addData(">", "Gyros Calibrated.  Press Start.");      //Update telemetry signalling that the gyros have calibrated
+        telemetry.addData(">", "Gyro Calibrated.  Press Start.");      //Update telemetry signalling that the gyro has calibrated
         telemetry.update();
 
 
         //Set the drive motor directions:
-        robot.leftFrontMotor.setDirection(DcMotor.Direction.FORWARD);
-        robot.leftBackMotor.setDirection(DcMotor.Direction.FORWARD);
-        robot.rightFrontMotor.setDirection(DcMotor.Direction.REVERSE);
-        robot.rightBackMotor.setDirection(DcMotor.Direction.REVERSE);
 
         //Set servo positions:
         robot.ultrasonicServo.setPosition(.75);
@@ -138,24 +135,53 @@ public class Autonomous_v3 extends LinearOpMode {
             telemetry.addData ("Ultrasonic", "Reading: " + robot.wallUltrasonic.getVoltage()/5.0);
             telemetry.addData("NavXGyro", "Current Heading" + robot.navx_device.getFusedHeading());
             telemetry.addData("ODS", "Line Sensor: " + robot.lineSensor.getLightDetected());
+            telemetry.addData("Ultrasonic", "Target Distance: " + (TARGET_DISTANCE / 100) + ((RADIUS*(1-(1/Math.sqrt(2))))/100));
             telemetry.update();
 
 
             switch (currentState){
                 case STATE_GYRO_DRIVE:
-                    if (robot.wallUltrasonic.getVoltage()/5 <= TARGET_DISTANCE + (RADIUS/Math.sqrt(2))){    //Correct distance to begin curve
-                        newState(State.STATE_TURN);     //Start next state
+                    if (robot.wallUltrasonic.getVoltage()/5 <= 0.4){    //Correct distance to begin curve
+//                    if (robot.wallUltrasonic.getVoltage()/5 <= (TARGET_DISTANCE / 100) + ((RADIUS*(1-(1/Math.sqrt(2))))/100)){    //Correct distance to begin curve
+                        newState(State.STATE_WALL_FOLLOW);     //Start next state
                     } else {
+                        //setDrivePower(BASE_SPEED, BASE_SPEED);
                         setTargetAngle(-45);    //Drive using the navX gyro 45 degrees left
                     }
                     break;
 
+//                case STATE_WALL_FOLLOW_ONE:
+//                    double currentAngle;
+//                    if(robot.lineSensor.getLightDetected()>= 0.02) { setDrivePower(-BASE_SPEED, -BASE_SPEED);
+//                        telemetry.addData("Weird", "Weird,");
+//                        setDrivePower(0,0);     //Stop the robot
+//                        robot.ultrasonicServo.setPosition(0.5);     //Point servo directly out
+//                        newState(State.STATE_BACKUP);     //Start next state
+//                    }
+//                    else {
+//                        double distance = robot.wallUltrasonic.getVoltage() / 5.0;    //Distance in meters
+//                        double distanceError = distance - TARGET_DISTANCE / 100.0;
+//                        telemetry.addData("Distance", "Distance Error" + distanceError);
+//                        if (distanceError >= 0) {
+//                            currentAngle = Math.toDegrees(Math.acos(((RADIUS / 100.0) - distanceError) / (RADIUS / 100.0)));
+//                            setTargetAngle(currentAngle);
+//                            setDrivePower(-BASE_SPEED, -BASE_SPEED);
+//                        } else{
+//                            currentAngle = Math.toDegrees(Math.acos(((RADIUS / 100.0) + distanceError) / (RADIUS / 100.0)));     //Calculate the angle that the robot needs to be pointed at
+//                        setTargetAngle(+currentAngle);      //Sets that value as our target Angle
+//                    }
+//                        followWall();
+//
+//                    }
+//                    break;
+
                 case STATE_WALL_FOLLOW:
                     double currentAngle;    //Angle that the robot needs to be pointed at to complete the curve
                     if(robot.lineSensor.getLightDetected()>= 0.02){     //White line is detected
-                        setDrivePower(0,0);     //Stop the robot
-                        robot.ultrasonicServo.setPosition(0.5);     //Point servo directly out
-                        newState(State.STATE_BACKUP);     //Start next state
+                        telemetry.addData("Weird", "Weird,");
+//                        setDrivePower(0,0);     //Stop the robot
+//                        robot.ultrasonicServo.setPosition(0.5);     //Point servo directly out
+//                        newState(State.STATE_BACKUP);     //Start next state
                 } else {
                         double distance = robot.wallUltrasonic.getVoltage()/5.0;    //Distance in meters
                         double distanceError = distance - TARGET_DISTANCE/100.0;    //Error between where we are and where we need to be
@@ -167,8 +193,10 @@ public class Autonomous_v3 extends LinearOpMode {
                             currentAngle = Math.toDegrees(Math.acos(((RADIUS/100.0) + distanceError) / (RADIUS/100.0)));     //Calculate the angle that the robot needs to be pointed at
                             setTargetAngle(+currentAngle);      //Sets that value as our target Angle
                         }
+                        followWall();
 
-                        telemetry.addData("Angle", "Current Angle" + currentAngle);     //Displays that angle as telemetry
+
+                       // telemetry.addData("Angle", "Current Angle" + currentAngle);     //Displays that angle as telemetry
                     }
                     break;
 
@@ -177,34 +205,34 @@ public class Autonomous_v3 extends LinearOpMode {
                         setDrivePower(0,0);
                         newState(State.STATE_STOP);
                 } else {
-                        setDrivePower(0.12, 0.12);  //Back up slowly
+                        setDrivePower(-0.12, -0.12);  //Back up slowly
                     }
                     break;
 
-                case STATE_READ_BEACON:
-                    if (robot.colorLeft.red() >= robot.colorLeft.blue()){
-                        robot.pusherLeft.setPower(BASE_SPEED);
-                        newState(State.STATE_PUSHER_IN);
-                    } else if (robot.colorRight.red() >= robot.colorRight.blue()){
-                        robot.pusherRight.setPower(BASE_SPEED);
-                        newState(State.STATE_PUSHER_IN);
-                    }
-                        break;
-
-                case STATE_PUSHER_IN:
-                    if ((robot.colorLeft.red() >= robot.colorLeft.blue() && robot.colorLeft.red() >= robot.colorLeft.blue())){
-                        robot.pusherLeft.setPower(-BASE_SPEED);
-                        if (firstBeaconPushed == false){
-                            firstBeaconPushed = !firstBeaconPushed;
-                            newState(State.STATE_WALL_FOLLOW);
-                        } else {
-                            firstBeaconPushed = !firstBeaconPushed;
-                            newState(State.STATE_STOP);
-                        }
-                    } else {
-                        sleep(50);
-                    }
-                    break;
+//                case STATE_READ_BEACON:
+//                    if (robot.colorLeft.red() >= robot.colorLeft.blue()){
+//                        robot.pusherLeft.setPower(BASE_SPEED);
+//                        newState(State.STATE_PUSHER_IN);
+//                    } else if (robot.colorRight.red() >= robot.colorRight.blue()){
+//                        robot.pusherRight.setPower(BASE_SPEED);
+//                        newState(State.STATE_PUSHER_IN);
+//                    }
+//                        break;
+//
+//                case STATE_PUSHER_IN:
+//                    if ((robot.colorLeft.red() >= robot.colorLeft.blue() && robot.colorLeft.red() >= robot.colorLeft.blue())){
+//                        robot.pusherLeft.setPower(-BASE_SPEED);
+//                        if (firstBeaconPushed == false){
+//                            firstBeaconPushed = !firstBeaconPushed;
+//                            newState(State.STATE_WALL_FOLLOW);
+//                        } else {
+//                            firstBeaconPushed = !firstBeaconPushed;
+//                            newState(State.STATE_STOP);
+//                        }
+//                    } else {
+//                        sleep(50);
+//                    }
+//                    break;
 
                 case STATE_STOP:
                     setDrivePower(0,0);     //Keeps the robot stopped
@@ -219,11 +247,11 @@ public class Autonomous_v3 extends LinearOpMode {
         stateTime.reset();      //Resets State Time
         currentState = newState;        //Changes the state
     }
-    void setDrivePower(double rightPower, double leftPower) {       //Sets the power of both sides of the robot
+    void setDrivePower(double leftPower, double rightPower) {       //Sets the power of both sides of the robot
         robot.setLeftPower(leftPower);      //Sets the motors on the left side to an inputted power
         robot.setRightPower(rightPower);        //Sets the motors on the right side to an inputted power
     }
-    void setTargetAngle(double inputAngle){     //Uses the navX sensor and given information to caluclate the wheel power necessary to be at a certain angle
+    void setTargetAngle(double inputAngle){    //Uses the navX sensor and given information to calculate the wheel power necessary to be at a certain angle
         double gyroDifference = inputAngle - robot.navx_device.getFusedHeading();       //Calculates the difference between the inputted angle and the current angle
 
         //Calculates the shortest way to get to the angle
@@ -242,10 +270,23 @@ public class Autonomous_v3 extends LinearOpMode {
            finalGyroDifference = Math.min(45.0, gyroDifference);
         }
 
-        setDrivePower(BASE_SPEED + finalGyroDifference/150.0, BASE_SPEED - finalGyroDifference/150.0);      //Sets power to change the angle accordingly
+        setDrivePower(BASE_SPEED *(1 + finalGyroDifference/45.0), BASE_SPEED * (1 - finalGyroDifference/45.0));      //Sets power to change the angle accordingly
+        telemetry.addData("Left Motor", "Setting to" + Double.toString(BASE_SPEED *(1 + finalGyroDifference/45.0)));
+        telemetry.addData("Right Motor", "Setting to" + Double.toString(BASE_SPEED * (1 - finalGyroDifference/45.0)));
+        telemetry.addData("Angle", "Going to" + finalGyroDifference);
+    }
+    void followWall(){
+        double integratedHeading = robot.navx_device.getFusedHeading();
 
-        robot.ultrasonicServo.setPosition((-inputAngle / 180.0) + 0.5);     //Sets servo position to point towards wall
-        telemetry.addData("Position", "Ideal Servo Position" + (-inputAngle / 180.0) + 0.5);    //Displays servo position as telemetry
+
+        while (integratedHeading > 180){
+           integratedHeading = integratedHeading - 360;
+        }
+        while (integratedHeading < -180){
+           integratedHeading = integratedHeading + 360;
+        }
+
+        robot.ultrasonicServo.setPosition((-integratedHeading / 180.0) + 0.5);     //Sets servo position to point towards wall
     }
 }
 
