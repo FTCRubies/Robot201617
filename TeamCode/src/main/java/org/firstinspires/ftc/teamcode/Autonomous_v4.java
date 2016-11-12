@@ -33,12 +33,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
-
 
 
 /**
@@ -55,8 +52,8 @@ import com.qualcomm.robotcore.util.Range;
  */
 
 @Autonomous(name="Autonomous", group="Linear Autonomous")
-@Disabled
-public class Autonomous_v3 extends LinearOpMode {
+
+public class Autonomous_v4 extends LinearOpMode {
 
     HardwareHopper robot = new HardwareHopper();
 
@@ -76,11 +73,12 @@ public class Autonomous_v3 extends LinearOpMode {
 
     // Names constants
     final double BASE_SPEED = 0.2;    // Speed used in the majority of autonomous
-    final double CORRECTION_SENSITIVITY = 30.0;
-    double TARGET_DISTANCE = 8.0;      //Distance that we want to be from the wall
-    double TARGET_DISTANCE_FINAL = 8.0;
+    final double CORRECTION_SENSITIVITY = 15.0;
+    double TARGET_DISTANCE = 3.0;      //Distance that we want to be from the wall
+    double TARGET_DISTANCE_FINAL = 3.0;
     double RADIUS = 200.0;       //Turning radius for wall-following corrections
     double RADIUS_FINAL = 200.0;       //Turning radius for wall-following corrections
+    double SAFETY_DISTANCE = 17.0;
 
     private State currentState;     //State in state machine that is currently running
 //    private double heading;
@@ -89,6 +87,7 @@ public class Autonomous_v3 extends LinearOpMode {
     //Name what we will be using for run time and state time
     private ElapsedTime runtime = new ElapsedTime();        //Overall time in program
     private ElapsedTime stateTime = new ElapsedTime();      //Time that the program has been in a given state
+    boolean pastFirstLine = false;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -145,7 +144,7 @@ public class Autonomous_v3 extends LinearOpMode {
                 case STATE_GYRO_DRIVE:
                     if (robot.wallUltrasonic.getVoltage()/5 <= 0.3){    //Correct distance to begin curve
                         setDrivePower(BASE_SPEED,-0.1);
-                        newState(State.STATE_TURN);     //Start next state
+                        newState(State.STATE_WALL_FOLLOW);     //Start next state
                     } else {
                         //setDrivePower(BASE_SPEED, BASE_SPEED);
                         setTargetAngle(-45);    //Drive using the navX gyro 45 degrees left
@@ -185,10 +184,19 @@ public class Autonomous_v3 extends LinearOpMode {
 
                 case STATE_WALL_FOLLOW:
                     double currentAngle;    //Angle that the robot needs to be pointed at to complete the curve
-                    if(robot.lineSensor.getLightDetected()>= 0.02){     //White line is detected
-                        TARGET_DISTANCE = TARGET_DISTANCE_FINAL;
-                        RADIUS = RADIUS_FINAL;
-                        telemetry.addData("Weird", "Weird,");
+                    if(robot.lineSensor.getLightDetected()>= 0.1){     //White line is detected
+                        if (pastFirstLine == true){
+                            setDrivePower(0,0);
+                            newState(State.STATE_READ_BEACON);
+                        } else {
+
+                            while (robot.lineSensor.getLightDetected() >= 0.1){
+                                idle();
+
+                            }
+                            pastFirstLine = true;
+
+                        }
 //                        setDrivePower(0,0);     //Stop the robot
 //                        robot.ultrasonicServo.setPosition(0.5);     //Point servo directly out
 //                        newState(State.STATE_BACKUP);     //Start next state
@@ -196,14 +204,9 @@ public class Autonomous_v3 extends LinearOpMode {
                         double distance = robot.wallUltrasonic.getVoltage()/5.0;    //Distance in meters
                         double distanceError = distance - TARGET_DISTANCE/100.0;    //Error between where we are and where we need to be
                         telemetry.addData("Distance", "Distance Error" + distanceError);    //Display telemetry for the distanceError
+                        currentAngle = Math.toDegrees(Math.asin(distanceError/(0.2159 + SAFETY_DISTANCE/100)));
+                        setTargetAngle(-currentAngle);
 
-                        if (distanceError >= 0) {   //If we are too far from the wall
-                            currentAngle = Math.toDegrees(Math.acos(((RADIUS/100.0) - distanceError) / (RADIUS/100.0)));     //Calculate the angle that the robot needs to be pointed at
-                            setTargetAngle(-currentAngle);      //Sets that values as our Target Angle
-                        } else {    //otherwise we must be too close to wall
-                            currentAngle = Math.toDegrees(Math.acos(((RADIUS/100.0) + distanceError) / (RADIUS/100.0)));     //Calculate the angle that the robot needs to be pointed at
-                            setTargetAngle(+currentAngle);      //Sets that value as our target Angle
-                        }
                         followWall();
 
 
@@ -220,30 +223,35 @@ public class Autonomous_v3 extends LinearOpMode {
                     }
                     break;
 
-//                case STATE_READ_BEACON:
-//                    if (robot.colorLeft.red() >= robot.colorLeft.blue()){
-//                        robot.pusherLeft.setPower(BASE_SPEED);
-//                        newState(State.STATE_PUSHER_IN);
-//                    } else if (robot.colorRight.red() >= robot.colorRight.blue()){
-//                        robot.pusherRight.setPower(BASE_SPEED);
-//                        newState(State.STATE_PUSHER_IN);
-//                    }
-//                        break;
-//
-//                case STATE_PUSHER_IN:
-//                    if ((robot.colorLeft.red() >= robot.colorLeft.blue() && robot.colorLeft.red() >= robot.colorLeft.blue())){
-//                        robot.pusherLeft.setPower(-BASE_SPEED);
-//                        if (firstBeaconPushed == false){
-//                            firstBeaconPushed = !firstBeaconPushed;
-//                            newState(State.STATE_WALL_FOLLOW);
-//                        } else {
-//                            firstBeaconPushed = !firstBeaconPushed;
-//                            newState(State.STATE_STOP);
-//                        }
-//                    } else {
-//                        sleep(50);
-//                    }
-//                    break;
+                case STATE_READ_BEACON:
+                    if (robot.colorLeft.red() >= robot.colorLeft.blue()){
+                        robot.pusherLeft.setPower(BASE_SPEED);
+                        newState(State.STATE_PUSHER_IN);
+                    } else if (robot.colorRight.red() >= robot.colorRight.blue()){
+                        robot.pusherRight.setPower(BASE_SPEED);
+                        newState(State.STATE_PUSHER_IN);
+                    }
+                        break;
+
+                case STATE_PUSHER_IN:
+                    if ((robot.colorLeft.red() >= robot.colorLeft.blue() && robot.colorRight.red() >= robot.colorRight.blue())){
+                        if (robot.pusherRight.getPower() != 0){
+                            robot.pusherRight.setPower(-BASE_SPEED);
+                        } else {
+                            robot.pusherLeft.setPower(-BASE_SPEED);
+                        }
+                        sleep(500);
+
+                        if (firstBeaconPushed == false){
+                            firstBeaconPushed = !firstBeaconPushed;
+                            newState(State.STATE_STOP);
+                        } else {;
+                            newState(State.STATE_STOP);
+                        }
+                    } else {
+                        sleep(50);
+                    }
+                    break;
 
                 case STATE_STOP:
                     setDrivePower(0,0);     //Keeps the robot stopped
@@ -259,8 +267,10 @@ public class Autonomous_v3 extends LinearOpMode {
         currentState = newState;        //Changes the state
     }
     void setDrivePower(double leftPower, double rightPower) {       //Sets the power of both sides of the robot
-        robot.setLeftPower(leftPower);      //Sets the motors on the left side to an inputted power
-        robot.setRightPower(rightPower);        //Sets the motors on the right side to an inputted power
+        double setLeft = Range.clip(leftPower, -1, 1);
+        double setRight = Range.clip(rightPower, -1, 1);
+        robot.setLeftPower(setLeft);      //Sets the motors on the left side to an inputted power
+        robot.setRightPower(setRight);        //Sets the motors on the right side to an inputted power
     }
     void setTargetAngle(double inputAngle){    //Uses the navX sensor and given information to calculate the wheel power necessary to be at a certain angle
         double gyroDifference = inputAngle - robot.navx_device.getFusedHeading();       //Calculates the difference between the inputted angle and the current angle

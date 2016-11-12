@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.hardware.AnalogInput;
@@ -43,8 +44,8 @@ public class HardwareHopper
     public AnalogInput wallUltrasonic = null;
     public OpticalDistanceSensor lineSensor = null;
     public AHRS navx_device;
-//    public ModernRoboticsI2cColorSensor colorLeft= null;
-//    public ModernRoboticsI2cColorSensor colorRight= null;
+    public ModernRoboticsI2cColorSensor colorLeft= null;
+    public ModernRoboticsI2cColorSensor colorRight= null;
 
     public final int NAVX_DIM_I2C_PORT = 5;
 
@@ -92,8 +93,8 @@ public class HardwareHopper
                 NAVX_DIM_I2C_PORT,
                 AHRS.DeviceDataType.kProcessedData);
         lineSensor = ahwMap.opticalDistanceSensor.get("line_ODS");
-//        colorLeft = (ModernRoboticsI2cColorSensor) ahwMap.colorSensor.get("left_color");
-//        colorRight = (ModernRoboticsI2cColorSensor) ahwMap.colorSensor.get("right_color");
+        colorLeft = (ModernRoboticsI2cColorSensor) ahwMap.colorSensor.get("left_color");
+        colorRight = (ModernRoboticsI2cColorSensor) ahwMap.colorSensor.get("right_color");
 
 
         ultrasonicServo = ahwMap.servo.get("ultrasonic_servo");
@@ -111,15 +112,16 @@ public class HardwareHopper
         rightFrontMotor.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
         rightBackMotor.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
 
-
+//        colorLeft.setI2cAddress(new I2cAddr(0x3c));
+//        colorRight.setI2cAddress(new I2cAddr(0x42));
 
         setLeftPower(0);
         setRightPower(0);
         ultrasonicServo.setPosition(0.5);
         pusherRight.setPower(0);
         pusherLeft.setPower(0);
-//        colorLeft.enableLed(false);
-//        colorRight.enableLed(false);
+        colorLeft.enableLed(true);
+        colorRight.enableLed(true);
         lineSensor.enableLed(true);
 
         // Set all motors to run without encoders.
