@@ -53,7 +53,7 @@ import com.qualcomm.robotcore.util.Range;
 
 @Autonomous(name="Red", group="Linear Autonomous")
 
-public class Autonomous_v4 extends LinearOpMode {
+public class Autonomous_v4Blue extends LinearOpMode {
 
     HardwareHopper robot = new HardwareHopper();
 

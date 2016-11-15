@@ -112,16 +112,16 @@ public class HardwareHopper
         rightFrontMotor.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
         rightBackMotor.setDirection(DcMotor.Direction.FORWARD);// Set to FORWARD if using AndyMark motors
 
-//        colorLeft.setI2cAddress(new I2cAddr(0x3c));
-//        colorRight.setI2cAddress(new I2cAddr(0x42));
+        colorLeft.setI2cAddress(I2cAddr.create8bit(0x3c));
+        colorRight.setI2cAddress((I2cAddr.create8bit(0x42)));
 
         setLeftPower(0);
         setRightPower(0);
         ultrasonicServo.setPosition(0.5);
         pusherRight.setPower(0);
         pusherLeft.setPower(0);
-        colorLeft.enableLed(true);
-        colorRight.enableLed(true);
+        colorLeft.enableLed(false);
+        colorRight.enableLed(false);
         lineSensor.enableLed(true);
 
         // Set all motors to run without encoders.
