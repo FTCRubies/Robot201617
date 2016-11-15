@@ -53,7 +53,7 @@ import com.qualcomm.robotcore.util.Range;
 
 @Autonomous(name="Red", group="Linear Autonomous")
 
-public class Autonomous_v4 extends LinearOpMode {
+public class Autonomous_v4Red extends LinearOpMode {
 
     HardwareHopper robot = new HardwareHopper();
 
@@ -78,7 +78,7 @@ public class Autonomous_v4 extends LinearOpMode {
     // Names constants
     final double BASE_SPEED = 0.3;    // Speed used in the majority of autonomous
     final double CORRECTION_SENSITIVITY = 20.0;
-    double TARGET_DISTANCE = 10.0;      //Distance that we want to be from the wall
+    double TARGET_DISTANCE = 6.0;      //Distance that we want to be from the wall
     double LINE_THRESHOLD = 0.15;
     double SAFETY_DISTANCE = 35.0;
 
@@ -88,7 +88,7 @@ public class Autonomous_v4 extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime();        //Overall time in program
     private ElapsedTime stateTime = new ElapsedTime();      //Time that the program has been in a given state
     boolean pastFirstLine = false;
-    AllianceColor currentAlliance = AllianceColor.BLUE;
+    AllianceColor currentAlliance = AllianceColor.RED;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -113,7 +113,7 @@ public class Autonomous_v4 extends LinearOpMode {
         //Set the drive motor directions:
 
         //Set servo positions:
-        if (currentAlliance == AllianceColor.RED){
+        if (currentAlliance == AllianceColor.BLUE){
             robot.ultrasonicServo.setPosition(.75);
         } else {
             robot.ultrasonicServo.setPosition(.25);
@@ -165,8 +165,10 @@ public class Autonomous_v4 extends LinearOpMode {
                     if(robot.lineSensor.getLightDetected()>= 0.1){     //White line is detected
                         if (pastFirstLine == true){
                             if (currentAlliance == AllianceColor.RED) {
+                                sleep(100);
                                 setDrivePower(-0.15,-0.15);
                             } else {
+                                sleep(100);
                                 setDrivePower(0.15, 0.15);
                             }
                             newState(State.STATE_BACKUP);
@@ -219,11 +221,11 @@ public class Autonomous_v4 extends LinearOpMode {
                         }
                     } else {
                         if (robot.colorLeft.blue() > robot.colorLeft.red()) {
-                            telemetry.addData("Pushing button", "Left");
+                            telemetry.addData("Pushing button", "Right");
                             robot.pusherLeft.setPower(-1);
                             newState(State.STATE_PUSHER_IN);
                         } else if (robot.colorRight.blue() > robot.colorRight.red()) {
-                            telemetry.addData("Pushing button", "Right");
+                            telemetry.addData("Pushing button", "Left");
                             robot.pusherRight.setPower(1);
                             newState(State.STATE_PUSHER_IN);
                         }
@@ -252,6 +254,7 @@ public class Autonomous_v4 extends LinearOpMode {
                 case STATE_WALL_FOLLOW_BACK:
                     double currentAngle2;    //Angle that the robot needs to be pointed at to complete the curve
                     if(robot.lineSensor.getLightDetected()>= 0.1 && stateTime.seconds() >= 0.5){     //White line is detected
+                        sleep(100);
                         if (currentAlliance == AllianceColor.RED) {
                             setDrivePower(0.15, 0.15);
                         } else {
