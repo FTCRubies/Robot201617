@@ -70,24 +70,25 @@ public class Autonomous_v4 extends LinearOpMode {
         STATE_CLOSE_BUTTON,
         STATE_STOP
     }
+    private enum AllianceColor {
+        RED,
+        BLUE
+    }
 
     // Names constants
     final double BASE_SPEED = 0.3;    // Speed used in the majority of autonomous
     final double CORRECTION_SENSITIVITY = 20.0;
     double TARGET_DISTANCE = 10.0;      //Distance that we want to be from the wall
-    double TARGET_DISTANCE_FINAL = 7.0;
-    double RADIUS = 200.0;       //Turning radius for wall-following corrections
     double LINE_THRESHOLD = 0.15;
     double SAFETY_DISTANCE = 35.0;
 
     private State currentState;     //State in state machine that is currently running
-//    private double heading;
-//    private double distance;
 
     //Name what we will be using for run time and state time
     private ElapsedTime runtime = new ElapsedTime();        //Overall time in program
     private ElapsedTime stateTime = new ElapsedTime();      //Time that the program has been in a given state
     boolean pastFirstLine = false;
+    AllianceColor currentAlliance = AllianceColor.BLUE;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -112,7 +113,11 @@ public class Autonomous_v4 extends LinearOpMode {
         //Set the drive motor directions:
 
         //Set servo positions:
-        robot.ultrasonicServo.setPosition(.75);
+        if (currentAlliance == AllianceColor.RED){
+            robot.ultrasonicServo.setPosition(.75);
+        } else {
+            robot.ultrasonicServo.setPosition(.25);
+        }
         robot.pusherLeft.setPower(0);
         robot.pusherRight.setPower(0);
 
@@ -147,45 +152,25 @@ public class Autonomous_v4 extends LinearOpMode {
             switch (currentState){
                 case STATE_GYRO_DRIVE:
                     if (robot.wallUltrasonic.getVoltage()/5 <= 0.5){    //Correct distance to begin curve
-                        setDrivePower(BASE_SPEED,-0.1);
+                        //setDrivePower(BASE_SPEED,-0.1);
                         newState(State.STATE_WALL_FOLLOW);     //Start next state
                     } else {
                         //setDrivePower(BASE_SPEED, BASE_SPEED);
-                        setTargetAngle(-45);    //Drive using the navX gyro 45 degrees left
+                        setTargetAngle(currentAlliance == AllianceColor.RED ? -45 : 45);    //Drive using the navX gyro 45 degrees left
                     }
                     break;
-
-//                case STATE_WALL_FOLLOW_ONE:
-//                    double currentAngle;
-//                    if(robot.lineSensor.getLightDetected()>= 0.02) { setDrivePower(-BASE_SPEED, -BASE_SPEED);
-//                        telemetry.addData("Weird", "Weird,");
-//                        setDrivePower(0,0);     //Stop the robot
-//                        robot.ultrasonicServo.setPosition(0.5);     //Point servo directly out
-//                        newState(State.STATE_BACKUP);     //Start next state
-//                    }
-//                    else {
-//                        double distance = robot.wallUltrasonic.getVoltage() / 5.0;    //Distance in meters
-//                        double distanceError = distance - TARGET_DISTANCE / 100.0;
-//                        telemetry.addData("Distance", "Distance Error" + distanceError);
-//                        if (distanceError >= 0) {
-//                            currentAngle = Math.toDegrees(Math.acos(((RADIUS / 100.0) - distanceError) / (RADIUS / 100.0)));
-//                            setTargetAngle(currentAngle);
-//                            setDrivePower(-BASE_SPEED, -BASE_SPEED);
-//                        } else{
-//                            currentAngle = Math.toDegrees(Math.acos(((RADIUS / 100.0) + distanceError) / (RADIUS / 100.0)));     //Calculate the angle that the robot needs to be pointed at
-//                        setTargetAngle(+currentAngle);      //Sets that value as our target Angle
-//                    }
-//                        followWall();
-//
-//                    }
-//                    break;
 
                 case STATE_WALL_FOLLOW:
                     double currentAngle1;    //Angle that the robot needs to be pointed at to complete the curve
                     if(robot.lineSensor.getLightDetected()>= 0.1){     //White line is detected
                         if (pastFirstLine == true){
-                            setDrivePower(-0.15,-0.15);
+                            if (currentAlliance == AllianceColor.RED) {
+                                setDrivePower(-0.15,-0.15);
+                            } else {
+                                setDrivePower(0.15, 0.15);
+                            }
                             newState(State.STATE_BACKUP);
+
                         } else {
 
                             while (robot.lineSensor.getLightDetected() >= 0.1){
@@ -207,7 +192,7 @@ public class Autonomous_v4 extends LinearOpMode {
                         double sideRatio = Range.clip(distanceError/(0.2159 + SAFETY_DISTANCE/100), -1, 1);
                         currentAngle1 = Math.toDegrees(Math.asin(sideRatio));
 
-                        setTargetAngle(Range.clip(-currentAngle1, -45, 45));
+                        setTargetAngle(Range.clip(currentAlliance == AllianceColor.RED ? -currentAngle1 : currentAngle1, -45, 45));
                         pointServoToWall();
 
                        // telemetry.addData("Angle", "Current Angle" + currentAngle);     //Displays that angle as telemetry
@@ -222,19 +207,33 @@ public class Autonomous_v4 extends LinearOpMode {
                     break;
 
                 case STATE_READ_BEACON:
-                    if (robot.colorLeft.red() >= robot.colorLeft.blue()){
-                        telemetry.addData("Pushing button", "Left");
-                        robot.pusherLeft.setPower(-1);
-                        newState(State.STATE_PUSHER_IN);
-                    } else if (robot.colorRight.red() >= robot.colorRight.blue()){
-                        telemetry.addData("Pushing button", "Right");
-                        robot.pusherRight.setPower(1);
-                        newState(State.STATE_PUSHER_IN);
+                    if (currentAlliance == AllianceColor.RED) {
+                        if (robot.colorLeft.red() > robot.colorLeft.blue()) {
+                            telemetry.addData("Pushing button", "Left");
+                            robot.pusherLeft.setPower(-1);
+                            newState(State.STATE_PUSHER_IN);
+                        } else if (robot.colorRight.red() > robot.colorRight.blue()) {
+                            telemetry.addData("Pushing button", "Right");
+                            robot.pusherRight.setPower(1);
+                            newState(State.STATE_PUSHER_IN);
+                        }
+                    } else {
+                        if (robot.colorLeft.blue() > robot.colorLeft.red()) {
+                            telemetry.addData("Pushing button", "Left");
+                            robot.pusherLeft.setPower(-1);
+                            newState(State.STATE_PUSHER_IN);
+                        } else if (robot.colorRight.blue() > robot.colorRight.red()) {
+                            telemetry.addData("Pushing button", "Right");
+                            robot.pusherRight.setPower(1);
+                            newState(State.STATE_PUSHER_IN);
+                        }
                     }
                         break;
 
                 case STATE_PUSHER_IN:
-                    if ((robot.colorLeft.red() >= robot.colorLeft.blue() && robot.colorRight.red() >= robot.colorRight.blue())){
+                    if (currentAlliance == AllianceColor.RED && (robot.colorLeft.red() >= robot.colorLeft.blue() && robot.colorRight.red() >= robot.colorRight.blue())
+                    || currentAlliance == AllianceColor.BLUE && (robot.colorLeft.blue() >= robot.colorLeft.red() && robot.colorRight.blue() >= robot.colorRight.red())
+                            || stateTime.seconds() >= 2){
                         if (robot.pusherRight.getPower() != 0){
                             robot.pusherRight.setPower(-1);
                         } else {
@@ -253,7 +252,11 @@ public class Autonomous_v4 extends LinearOpMode {
                 case STATE_WALL_FOLLOW_BACK:
                     double currentAngle2;    //Angle that the robot needs to be pointed at to complete the curve
                     if(robot.lineSensor.getLightDetected()>= 0.1 && stateTime.seconds() >= 0.5){     //White line is detected
-                        setDrivePower(0.15, 0.15);
+                        if (currentAlliance == AllianceColor.RED) {
+                            setDrivePower(0.15, 0.15);
+                        } else {
+                            setDrivePower(-0.15, -0.15);
+                        }
                         newState(State.STATE_FORWARD);
 
                     } else {
@@ -261,7 +264,7 @@ public class Autonomous_v4 extends LinearOpMode {
                         double distanceError = distance - TARGET_DISTANCE/100.0;    //Error between where we are and where we need to be
 //                        telemetry.addData("Distance", "Distance Error" + distanceError);    //Display telemetry for the distanceError
                         currentAngle2 = Math.toDegrees(Math.asin(distanceError/(0.2159 + SAFETY_DISTANCE/100)));
-                        setTargetAngleBackwards(Range.clip(currentAngle2, -45, 45));
+                        setTargetAngleBackwards(Range.clip(currentAlliance == AllianceColor.RED ? currentAngle2 : -currentAngle2, -45, 45));
                         pointServoToWall();
                     }
                     break;
@@ -311,7 +314,11 @@ public class Autonomous_v4 extends LinearOpMode {
            finalGyroDifference = Math.min(45.0, gyroDifference);
         }
 
-        setDrivePower(BASE_SPEED *(1 + finalGyroDifference/CORRECTION_SENSITIVITY), BASE_SPEED * (1 - finalGyroDifference/CORRECTION_SENSITIVITY));      //Sets power to change the angle accordingly
+        if (currentAlliance == AllianceColor.RED){
+            setDrivePower(BASE_SPEED *(1 + finalGyroDifference/CORRECTION_SENSITIVITY), BASE_SPEED * (1 - finalGyroDifference/CORRECTION_SENSITIVITY));      //Sets power to change the angle accordingly
+        } else {
+            setDrivePower(-BASE_SPEED *(1 - finalGyroDifference/CORRECTION_SENSITIVITY), -BASE_SPEED * (1 + finalGyroDifference/CORRECTION_SENSITIVITY));      //Sets power to change the angle accordingly
+        }
 
         telemetry.addData("Left Motor", "Setting to" + Double.toString(BASE_SPEED *(1 + finalGyroDifference/45.0)));
         telemetry.addData("Right Motor", "Setting to" + Double.toString(BASE_SPEED * (1 - finalGyroDifference/45.0)));
@@ -336,7 +343,11 @@ public class Autonomous_v4 extends LinearOpMode {
             finalGyroDifference = Math.min(45.0, gyroDifference);
         }
 
-        setDrivePower(-BASE_SPEED *(1 - finalGyroDifference/CORRECTION_SENSITIVITY), -BASE_SPEED * (1 + finalGyroDifference/CORRECTION_SENSITIVITY));      //Sets power to change the angle accordingly
+        if (currentAlliance == AllianceColor.RED) {
+            setDrivePower(-BASE_SPEED * (1 - finalGyroDifference / CORRECTION_SENSITIVITY), -BASE_SPEED * (1 + finalGyroDifference / CORRECTION_SENSITIVITY));      //Sets power to change the angle accordingly
+        } else {
+            setDrivePower(BASE_SPEED * (1 + finalGyroDifference / CORRECTION_SENSITIVITY), BASE_SPEED * (1 - finalGyroDifference / CORRECTION_SENSITIVITY));      //Sets power to change the angle accordingly
+        }
 
         telemetry.addData("Left Motor", "Setting to" + Double.toString(BASE_SPEED *(1 + finalGyroDifference/45.0)));
         telemetry.addData("Right Motor", "Setting to" + Double.toString(BASE_SPEED * (1 - finalGyroDifference/45.0)));

@@ -51,7 +51,7 @@ import com.qualcomm.robotcore.util.Range;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@Autonomous(name="Red", group="Linear Autonomous")
+@Autonomous(name="Blue", group="Linear Autonomous")
 
 public class Autonomous_v4Blue extends LinearOpMode {
 
@@ -112,7 +112,7 @@ public class Autonomous_v4Blue extends LinearOpMode {
         //Set the drive motor directions:
 
         //Set servo positions:
-        robot.ultrasonicServo.setPosition(.75);
+        robot.ultrasonicServo.setPosition(.25);
         robot.pusherLeft.setPower(0);
         robot.pusherRight.setPower(0);
 
