@@ -33,6 +33,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -51,9 +52,9 @@ import com.qualcomm.robotcore.util.Range;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@Autonomous(name="Blue", group="Linear Autonomous")
-
-public class Autonomous_v4Blue extends LinearOpMode {
+@Autonomous(name="Red", group="Linear Autonomous")
+@Disabled
+public class Autonomous_v4 extends LinearOpMode {
 
     HardwareHopper robot = new HardwareHopper();
 
@@ -70,7 +71,7 @@ public class Autonomous_v4Blue extends LinearOpMode {
         STATE_CLOSE_BUTTON,
         STATE_STOP
     }
-    private enum AllianceColor {
+    public enum AllianceColor {
         RED,
         BLUE
     }
@@ -78,9 +79,10 @@ public class Autonomous_v4Blue extends LinearOpMode {
     // Names constants
     final double BASE_SPEED = 0.3;    // Speed used in the majority of autonomous
     final double CORRECTION_SENSITIVITY = 20.0;
-    double TARGET_DISTANCE = 10.0;      //Distance that we want to be from the wall
-    double LINE_THRESHOLD = 0.18;
+    double TARGET_DISTANCE = 6.0;      //Distance that we want to be from the wall
+    double LINE_THRESHOLD = 0.15;
     double SAFETY_DISTANCE = 35.0;
+    double FILTER_MULTIPLIER = 0.1;
 
     private State currentState;     //State in state machine that is currently running
 
@@ -88,7 +90,7 @@ public class Autonomous_v4Blue extends LinearOpMode {
     private ElapsedTime runtime = new ElapsedTime();        //Overall time in program
     private ElapsedTime stateTime = new ElapsedTime();      //Time that the program has been in a given state
     boolean pastFirstLine = false;
-    AllianceColor currentAlliance = AllianceColor.BLUE;
+    public AllianceColor currentAlliance;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -120,6 +122,11 @@ public class Autonomous_v4Blue extends LinearOpMode {
         }
         robot.pusherLeft.setPower(0);
         robot.pusherRight.setPower(0);
+
+        double filteredDistance;
+        double currentUltrasonicReading;
+        double pastUltrasonicReading = robot.wallUltrasonic.getVoltage()/5;
+
 
 
         // Wait for the game to start (driver presses PLAY)
@@ -165,8 +172,10 @@ public class Autonomous_v4Blue extends LinearOpMode {
                     if(robot.lineSensor.getLightDetected()>= 0.1){     //White line is detected
                         if (pastFirstLine == true){
                             if (currentAlliance == AllianceColor.RED) {
+                                sleep(100);
                                 setDrivePower(-0.15,-0.15);
                             } else {
+                                sleep(100);
                                 setDrivePower(0.15, 0.15);
                             }
                             newState(State.STATE_BACKUP);
@@ -184,8 +193,10 @@ public class Autonomous_v4Blue extends LinearOpMode {
 //                        robot.ultrasonicServo.setPosition(0.5);     //Point servo directly out
 //                        newState(State.STATE_BACKUP);     //Start next state
                 } else {
-                        double distance = robot.wallUltrasonic.getVoltage()/5.0;    //Distance in meters
-                        double distanceError = distance - TARGET_DISTANCE/100.0;    //Error between where we are and where we need to be
+                        currentUltrasonicReading = robot.wallUltrasonic.getVoltage()/5;
+                        filteredDistance= pastUltrasonicReading + FILTER_MULTIPLIER * (currentUltrasonicReading - pastUltrasonicReading);
+//                        double distance = robot.wallUltrasonic.getVoltage()/5.0;    //Distance in meters
+                        double distanceError = filteredDistance - TARGET_DISTANCE/100.0;    //Error between where we are and where we need to be
 //                        double angleTo = Range.clip(distanceError/(0.2159 + SAFETY_DISTANCE/100), -1, 1 );
 //                        telemetry.addData("Distance", "Distance Error" + distanceError);    //Display telemetry for the distanceError
 
@@ -194,8 +205,7 @@ public class Autonomous_v4Blue extends LinearOpMode {
 
                         setTargetAngle(Range.clip(currentAlliance == AllianceColor.RED ? -currentAngle1 : currentAngle1, -45, 45));
                         pointServoToWall();
-
-                       // telemetry.addData("Angle", "Current Angle" + currentAngle);     //Displays that angle as telemetry
+                        pastUltrasonicReading = currentUltrasonicReading;
                     }
                     break;
 
@@ -219,11 +229,11 @@ public class Autonomous_v4Blue extends LinearOpMode {
                         }
                     } else {
                         if (robot.colorLeft.blue() > robot.colorLeft.red()) {
-                            telemetry.addData("Pushing button", "Left");
+                            telemetry.addData("Pushing button", "Right");
                             robot.pusherLeft.setPower(-1);
                             newState(State.STATE_PUSHER_IN);
                         } else if (robot.colorRight.blue() > robot.colorRight.red()) {
-                            telemetry.addData("Pushing button", "Right");
+                            telemetry.addData("Pushing button", "Left");
                             robot.pusherRight.setPower(1);
                             newState(State.STATE_PUSHER_IN);
                         }
@@ -245,13 +255,15 @@ public class Autonomous_v4Blue extends LinearOpMode {
                             firstBeaconPushed = true;
                             newState(State.STATE_WALL_FOLLOW_BACK);
                         } else {
-                            newState(State.STATE_STOP);
+                            TARGET_DISTANCE = 35;
+                            newState(State.STATE_WALL_FOLLOW_BACK);
                         }
                     }
                     break;
                 case STATE_WALL_FOLLOW_BACK:
                     double currentAngle2;    //Angle that the robot needs to be pointed at to complete the curve
-                    if(robot.lineSensor.getLightDetected()>= 0.1 && stateTime.seconds() >= 0.5){     //White line is detected
+                    if((robot.lineSensor.getLightDetected()>= 0.1 && stateTime.seconds() >= 0.5)){     //White line is detected
+                        sleep(100);
                         if (currentAlliance == AllianceColor.RED) {
                             setDrivePower(0.15, 0.15);
                         } else {
@@ -259,7 +271,10 @@ public class Autonomous_v4Blue extends LinearOpMode {
                         }
                         newState(State.STATE_FORWARD);
 
-                    } else {
+                    } else if (Math.abs(robot.navx_device.getPitch()) + Math.abs(robot.navx_device.getRoll()) >= 15){
+                        newState(State.STATE_STOP);
+                    }
+                    else {
                         double distance = robot.wallUltrasonic.getVoltage()/5.0;    //Distance in meters
                         double distanceError = distance - TARGET_DISTANCE/100.0;    //Error between where we are and where we need to be
 //                        telemetry.addData("Distance", "Distance Error" + distanceError);    //Display telemetry for the distanceError

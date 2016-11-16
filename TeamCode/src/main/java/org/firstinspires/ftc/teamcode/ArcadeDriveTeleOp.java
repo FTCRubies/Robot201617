@@ -128,9 +128,6 @@ public class ArcadeDriveTeleOp extends OpMode{
             telemetry.addData ("Buttons Pressed", "None");
         }
 
-        while (gamepad1.x){
-
-        }
 
 
 
